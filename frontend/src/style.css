@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-green: #065f46;
+  --accent-green: #10b981;
+  --bg-light: #f4f7fa;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at 50% 50%, #fdfdff 0%, #ebf2ff 100%);
+  color: #1a1c1e;
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+}
+
+.glass-jar {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(15px);
+  border: 8px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.05), inset 0 0 20px rgba(255, 255, 255, 0.5);
+  border-radius: 4rem;
+}
+
+.pill-card {
+  @apply bg-white/80 backdrop-blur-md px-8 py-5 rounded-[2.5rem] shadow-sm border border-white;
+}
+
+.btn-circle {
+  @apply w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1 transition-all active:scale-90 shadow-lg;
+}
+
+.progress-bar-container {
+  @apply w-full max-w-sm h-3 bg-white/50 rounded-full overflow-hidden border border-white;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  @apply h-full rounded-full transition-all duration-1000;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
