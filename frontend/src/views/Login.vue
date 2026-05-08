@@ -1,8 +1,9 @@
 <script setup>
 import { CircleDot } from 'lucide-vue-next';
 
-const handleGoogleLogin = () => {
-  window.location.href = 'http://localhost:5000/api/auth/google';
+const loginWithGoogle = () => {
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  window.location.href = `${API_BASE}/auth/google`;
 };
 </script>
 
@@ -19,7 +20,7 @@ const handleGoogleLogin = () => {
       <p class="text-slate-500 font-medium mb-10 text-sm uppercase tracking-widest">Your AI Nutrition Guardian</p>
 
       <button 
-        @click="handleGoogleLogin"
+        @click="loginWithGoogle"
         class="w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-4 hover:bg-slate-50 transition-all shadow-sm active:scale-95"
       >
         <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-6 h-6" alt="Google" />
