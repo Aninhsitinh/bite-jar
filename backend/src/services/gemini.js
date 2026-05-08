@@ -1,4 +1,4 @@
-const axios = require('axios');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
 const analyzeFoodImage = async (imageBuffer, mimeType) => {
@@ -6,48 +6,36 @@ const analyzeFoodImage = async (imageBuffer, mimeType) => {
   if (!apiKey) throw new Error("GEMINI_API_KEY is missing!");
 
   try {
-    console.log(`[AI] Starting analysis in Vercel Region...`);
-    
-    // Sử dụng v1beta và gemini-1.5-flash-latest để có độ tương thích cao nhất
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-    
-    const payload = {
-      contents: [{
-        parts: [
-          { text: "Bạn là một chuyên gia dinh dưỡng. Hãy phân tích ảnh món ăn này. Trả về DUY NHẤT một chuỗi JSON thuần túy (không có markdown ```json) với cấu trúc: {\"food_name\": \"...\", \"calories_estimate\": 0, \"category\": \"balanced\", \"fat_level\": 5, \"short_feedback\": \"...\"}. Ngôn ngữ: Tiếng Việt." },
-          {
-            inlineData: {
-              mimeType: mimeType,
-              data: imageBuffer.toString("base64")
-            }
-          }
-        ]
-      }]
-    };
+    console.log(`[AI] Initializing Google SDK with gemini-2.0-flash...`);
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const response = await axios.post(url, payload, { 
-      timeout: 30000,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const prompt = "Bạn là một chuyên gia dinh dưỡng. Hãy phân tích ảnh món ăn này. Trả về DUY NHẤT một chuỗi JSON thuần túy với cấu trúc: {\"food_name\": \"...\", \"calories_estimate\": 0, \"category\": \"balanced\", \"fat_level\": 5, \"short_feedback\": \"...\"}. Ngôn ngữ: Tiếng Việt.";
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: imageBuffer.toString("base64"),
+          mimeType
+        }
+      }
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
     
-    if (response.data && response.data.candidates && response.data.candidates[0].content) {
-      const text = response.data.candidates[0].content.parts[0].text;
-      const cleanedText = text.replace(/```json|```/g, "").trim();
-      console.log(`[AI] Success: ${cleanedText.substring(0, 50)}...`);
-      return JSON.parse(cleanedText);
-    }
+    // Làm sạch JSON nếu AI có lỡ tay thêm markdown
+    const cleanedText = text.replace(/```json|```/g, "").trim();
+    console.log(`[AI] SDK Success: ${cleanedText.substring(0, 50)}...`);
     
-    console.error("[AI] Unexpected Response Structure:", JSON.stringify(response.data));
-    throw new Error("No response from AI candidates");
+    return JSON.parse(cleanedText);
 
   } catch (error) {
-    const status = error.response ? error.response.status : 'Error';
-    const data = error.response ? error.response.data : null;
+    console.error(`[AI] SDK Error:`, error.message);
+    if (error.stack) console.error(error.stack);
     
-    console.error(`[AI] Failed Status: ${status}`);
-    if (data) console.error(`[AI] Google Error Details:`, JSON.stringify(data));
-    
-    throw new Error(`AI failed (${status}). Check Vercel logs for Google Error Details.`);
+    throw new Error(`AI SDK failed: ${error.message}. Check Vercel logs for full stack trace.`);
   }
 };
 
