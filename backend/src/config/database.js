@@ -2,23 +2,28 @@ const pg = require('pg');
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-if (!process.env.DATABASE_URL) {
+const dbUrl = process.env.DATABASE_URL;
+
+if (!dbUrl) {
   console.warn('WARNING: DATABASE_URL is not defined. Database operations will fail.');
 }
 
-// Debug log (Safe: hides password)
-const maskedUrl = process.env.DATABASE_URL.replace(/:(\/\/.*):(.*)@/, ':$1:****@');
-console.log('Connecting to database with URL:', maskedUrl);
-
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres',
-  logging: false,
-  dialectOptions: {
-    ssl: process.env.NODE_ENV === 'production' ? {
-      require: true,
-      rejectUnauthorized: false
-    } : false
-  }
-});
+// Khởi tạo Sequelize chỉ khi có URL, nếu không sẽ dùng một đối tượng giả để tránh sập app
+const sequelize = dbUrl 
+  ? new Sequelize(dbUrl, {
+      dialect: 'postgres',
+      logging: false,
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      }
+    })
+  : { 
+      define: () => ({}), 
+      authenticate: () => Promise.reject('No Database URL'),
+      prototype: {} 
+    };
 
 module.exports = sequelize;
