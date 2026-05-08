@@ -2,8 +2,7 @@ const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
 if (!process.env.DATABASE_URL) {
-  console.error('CRITICAL: DATABASE_URL is not defined in environment variables');
-  process.exit(1);
+  console.warn('WARNING: DATABASE_URL is not defined. Database operations will fail.');
 }
 
 // Debug log (Safe: hides password)
