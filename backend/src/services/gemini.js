@@ -8,32 +8,30 @@ const analyzeFoodImage = async (imageBuffer, mimeType) => {
     throw new Error("GEMINI_API_KEY is missing!");
   }
 
-  const models = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-1.5-flash"];
+  const models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
   
   let lastError = null;
 
   for (const modelName of models) {
     try {
-      console.log(`[AI-Native] Attempting ${modelName} via v1 API...`);
+      console.log(`[AI-Native] Attempting ${modelName} with Primitive Syntax...`);
       
-      const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
       
-      // Tất cả biến phải là camelCase cho bản REST API v1
       const payload = {
         contents: [{
           parts: [
-            { text: "Bạn là một chuyên gia dinh dưỡng. Phân tích món ăn và trả về JSON: {\"food_name\": \"...\", \"calories_estimate\": 0, \"category\": \"balanced\", \"fat_level\": 5, \"short_feedback\": \"...\"}" },
+            { text: "Bạn là một chuyên gia dinh dưỡng. Hãy phân tích hình ảnh thức ăn và trả về DUY NHẤT một chuỗi JSON (không Markdown): {\"food_name\": \"...\", \"calories_estimate\": 0, \"category\": \"balanced\", \"fat_level\": 5, \"short_feedback\": \"...\"}" },
             {
-              inlineData: {
-                mimeType: mimeType,
+              inline_data: {
+                mime_type: mimeType,
                 data: imageBuffer.toString("base64")
               }
             }
           ]
-        }],
-        generationConfig: {
-          responseMimeType: "application/json"
         }
+        // Bỏ hoàn toàn generationConfig để tránh lỗi không tương thích biến
+        ]
       };
 
       const response = await axios.post(url, payload, {
@@ -42,7 +40,9 @@ const analyzeFoodImage = async (imageBuffer, mimeType) => {
 
       if (response.data && response.data.candidates && response.data.candidates[0].content) {
         const text = response.data.candidates[0].content.parts[0].text;
-        return JSON.parse(text);
+        // Làm sạch text nếu AI lỡ tay cho thêm Markdown
+        const cleanedText = text.replace(/```json|```/g, "").trim();
+        return JSON.parse(cleanedText);
       }
       
     } catch (error) {
