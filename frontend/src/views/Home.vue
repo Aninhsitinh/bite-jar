@@ -124,12 +124,12 @@ const totalCalories = computed(() => {
       <!-- Title Section -->
       <div class="text-center mb-10">
         <h1 class="text-4xl font-bold mb-2">Today's Jar</h1>
-        <p class="text-slate-500 font-medium">{{ totalCalories }} / 2,000 kcal filled</p>
+        <p class="text-slate-500 font-medium">{{ totalCalories }} / 3,000 kcal filled</p>
       </div>
 
       <!-- Progress Bar -->
       <div class="progress-bar-container mb-12 shadow-inner">
-        <div class="progress-bar-fill" :style="{ width: `${(totalCalories / 2000) * 100}%` }"></div>
+        <div class="progress-bar-fill" :style="{ width: `${(totalCalories / 3000) * 100}%` }"></div>
       </div>
 
       <!-- Center Container with Jar & Side Buttons -->

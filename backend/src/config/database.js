@@ -10,11 +10,10 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false,
   dialectOptions: {
-    // Required for Render/Cloud SQL sometimes
-    // ssl: {
-    //   require: true,
-    //   rejectUnauthorized: false
-    // }
+    ssl: process.env.NODE_ENV === 'production' ? {
+      require: true,
+      rejectUnauthorized: false
+    } : false
   }
 });
 

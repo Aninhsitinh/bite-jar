@@ -60,7 +60,7 @@ const addItem = (item) => {
 
   const width = scene.value.clientWidth;
   const isMobile = width < 768;
-  const radius = isMobile ? (15 + Math.random() * 5) : (22 + Math.random() * 8);
+  const radius = isMobile ? (10 + Math.random() * 3) : (15 + Math.random() * 5);
   const x = Math.random() * (width - 100) + 50;
   
   const body = Matter.Bodies.circle(x, -50, radius, {

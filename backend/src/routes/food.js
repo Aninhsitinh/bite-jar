@@ -9,23 +9,34 @@ router.use(auth);
 
 // Helper to check if jar should be locked based on user cutoff time
 const checkLockStatus = async (userId, jar) => {
+  // If explicitly closed by system/user, stay closed
   if (jar.status === 'closed') return true;
   
   const user = await User.findByPk(userId);
   if (!user || !user.cutoff_time) return false;
 
   const now = new Date();
-  const [hours, minutes, seconds] = user.cutoff_time.split(':').map(Number);
-  
-  const cutoff = new Date();
-  cutoff.setHours(hours, minutes, seconds || 0, 0);
+  const todayStr = now.toISOString().split('T')[0];
 
-  // If current time is past cutoff, lock it
+  // If this jar is for a past date, it should be closed
+  if (jar.date < todayStr) {
+    jar.status = 'closed';
+    await jar.save();
+    return true;
+  }
+
+  // For today's jar, check the cutoff time
+  const [hours, minutes] = user.cutoff_time.split(':').map(Number);
+  const cutoff = new Date();
+  cutoff.setHours(hours, minutes, 0, 0);
+
+  // It's only locked if we are currently PAST the cutoff time of TODAY
   if (now > cutoff) {
     jar.status = 'closed';
     await jar.save();
     return true;
   }
+
   return false;
 };
 

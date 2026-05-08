@@ -32,6 +32,25 @@ const fetchReport = async () => {
   }
 };
 
+const shareReport = async () => {
+  const shareData = {
+    title: 'My BiteJar Daily Report',
+    text: `Hôm nay mình ăn uống thế nào? ${report.value.summary.verdict}. Xem chi tiết hũ đồ ăn của mình nhé!`,
+    url: window.location.href
+  };
+
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else {
+      await navigator.clipboard.writeText(window.location.href);
+      alert('Link copied to clipboard!');
+    }
+  } catch (err) {
+    console.log('Share failed', err);
+  }
+};
+
 onMounted(fetchReport);
 </script>
 
@@ -42,7 +61,7 @@ onMounted(fetchReport);
        <button @click="router.back()" class="flex items-center gap-2 text-emerald-900 font-black tracking-tight uppercase text-xs">
          <ChevronLeft class="w-5 h-5" /> Daily Report
        </button>
-       <button class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+       <button @click="shareReport" class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-emerald-800 transition-all">
          <Share2 class="w-5 h-5" />
        </button>
     </header>
@@ -52,18 +71,22 @@ onMounted(fetchReport);
       <div class="flex flex-col items-center text-center">
         <div class="relative w-48 h-64 mb-6">
            <!-- Glass Jar Visual -->
-           <div class="absolute inset-0 bg-emerald-50 rounded-[3rem] border-8 border-white shadow-xl flex items-center justify-center">
+           <div :class="report.jar.status === 'closed' ? 'bg-emerald-50' : 'bg-orange-50'" class="absolute inset-0 rounded-[3rem] border-8 border-white shadow-xl flex items-center justify-center">
               <div class="flex flex-col items-center gap-2">
-                 <div class="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center text-emerald-400">
-                    <CheckCircle2 class="w-10 h-10" />
+                 <div class="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center" :class="report.jar.status === 'closed' ? 'text-emerald-400' : 'text-orange-400'">
+                    <component :is="report.jar.status === 'closed' ? CheckCircle2 : Lock" class="w-10 h-10" />
                  </div>
-                 <p class="text-xs font-black text-emerald-800 uppercase tracking-widest">Jar Locked</p>
+                 <p class="text-xs font-black uppercase tracking-widest" :class="report.jar.status === 'closed' ? 'text-emerald-800' : 'text-orange-800'">
+                   {{ report.jar.status === 'closed' ? 'Jar Locked' : 'Jar Open' }}
+                 </p>
               </div>
            </div>
-           <!-- Cap -->
-           <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-slate-200 rounded-full border-4 border-white shadow-sm"></div>
+           <!-- Cap (Only if locked) -->
+           <div v-if="report.jar.status === 'closed'" class="absolute -top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-slate-200 rounded-full border-4 border-white shadow-sm"></div>
         </div>
-        <p class="text-xs font-medium text-slate-500 max-w-[200px]">Great job! Your food jar is sealed for the day.</p>
+        <p class="text-xs font-medium text-slate-500 max-w-[200px]">
+          {{ report.jar.status === 'closed' ? 'Great job! Your food jar is sealed for the day.' : 'Your jar is still open. Keep adding your meals!' }}
+        </p>
       </div>
 
       <!-- Verdict Card -->
@@ -125,7 +148,7 @@ onMounted(fetchReport);
       </div>
 
       <!-- Share Button -->
-      <button class="w-full py-6 bg-emerald-900 text-white rounded-[2.5rem] font-bold flex items-center justify-center gap-4 shadow-xl active:scale-95 transition-all">
+      <button @click="shareReport" class="w-full py-6 bg-emerald-900 text-white rounded-[2.5rem] font-bold flex items-center justify-center gap-4 shadow-xl active:scale-95 transition-all">
         <Share class="w-5 h-5" /> Share Report
       </button>
     </main>
