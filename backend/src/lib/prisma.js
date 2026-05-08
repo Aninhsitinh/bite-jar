@@ -1,9 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 
-// Chuẩn Prisma 7: Dùng datasourceUrl thay cho datasources
-const prisma = global.prisma || new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL
-});
+// Prisma 7 sẽ tự động lấy cấu hình từ prisma.config.ts
+const prisma = global.prisma || new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
 
