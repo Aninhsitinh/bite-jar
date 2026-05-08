@@ -60,7 +60,7 @@ const addItem = (item) => {
 
   const width = scene.value.clientWidth;
   const isMobile = width < 768;
-  const radius = isMobile ? (22 + Math.random() * 10) : (35 + Math.random() * 15);
+  const radius = isMobile ? (15 + Math.random() * 5) : (22 + Math.random() * 8);
   const x = Math.random() * (width - 100) + 50;
   
   const body = Matter.Bodies.circle(x, -50, radius, {
@@ -69,8 +69,8 @@ const addItem = (item) => {
     render: {
       sprite: {
         texture: item.image_data,
-        xScale: (radius * 2) / 100,
-        yScale: (radius * 2) / 100
+        xScale: (radius * 2.2) / 200, // Adjusted scale factor
+        yScale: (radius * 2.2) / 200
       }
     }
   });
@@ -113,6 +113,14 @@ onMounted(() => {
 
   window.addEventListener('resize', handleResize);
   props.items.forEach(addItem);
+
+  // Watch for new items added from parent
+  watch(() => props.items, (newItems) => {
+    if (newItems.length > Matter.Composite.allBodies(engine.world).filter(b => !b.isStatic).length) {
+      const latestItem = newItems[0];
+      if (latestItem) addItem(latestItem);
+    }
+  }, { deep: true });
 });
 
 onUnmounted(() => {

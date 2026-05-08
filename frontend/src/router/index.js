@@ -1,12 +1,26 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '../views/Home.vue';
 import Login from '../views/Login.vue';
+import Profile from '../views/Profile.vue';
+import DailyReport from '../views/DailyReport.vue';
 
 const routes = [
   {
     path: '/',
     name: 'Home',
     component: Home,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/report/:date?',
+    name: 'DailyReport',
+    component: DailyReport,
     meta: { requiresAuth: true }
   },
   {

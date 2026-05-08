@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import JarPhysics from '../components/JarPhysics.vue';
 import CameraModal from '../components/CameraModal.vue';
+import AnalysisResult from '../components/AnalysisResult.vue';
 import { 
   Camera, 
   RefreshCw, 
@@ -11,7 +12,8 @@ import {
   Bell,
   Droplets,
   Flame,
-  LayoutDashboard
+  LayoutDashboard,
+  User
 } from 'lucide-vue-next';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -26,9 +28,12 @@ const axiosInstance = axios.create({
 
 const jarItems = ref([]);
 const isLocked = ref(false);
+const jarStats = ref({});
 const jarRef = ref(null);
 const showCamera = ref(false);
 const isAnalyzing = ref(false);
+const showAnalysis = ref(false);
+const currentItem = ref(null);
 
 const handleLogout = () => {
   localStorage.removeItem('token');
@@ -47,12 +52,30 @@ const onCapture = async (imageData) => {
     const formData = new FormData();
     formData.append('image', blob, 'capture.jpg');
     const response = await axiosInstance.post('/food/upload', formData);
-    jarItems.value.unshift(response.data);
-    if (jarRef.value) jarRef.value.addItem(response.data);
+    currentItem.value = response.data;
+    showAnalysis.value = true;
   } catch (err) {
-    alert("Analysis failed. Please try again!");
+    alert("Analysis failed. Error: " + (err.response?.data?.error || err.message));
   } finally {
     isAnalyzing.value = false;
+  }
+};
+
+const updateWater = async () => {
+  try {
+    const response = await axiosInstance.post('/food/water', { amount: 1 });
+    jarStats.value.water_intake = response.data.water_intake;
+  } catch (err) {
+    console.error("Failed to update water");
+  }
+};
+
+const confirmItem = () => {
+  if (currentItem.value) {
+    jarItems.value.unshift(currentItem.value);
+    if (jarRef.value) jarRef.value.addItem(currentItem.value);
+    showAnalysis.value = false;
+    currentItem.value = null;
   }
 };
 
@@ -61,6 +84,7 @@ const fetchTodayData = async () => {
     const response = await axiosInstance.get('/food/today');
     jarItems.value = response.data.items || [];
     isLocked.value = response.data.status === 'closed';
+    jarStats.value = response.data;
   } catch (err) {
     console.error("Failed to fetch data:", err);
   }
@@ -81,17 +105,17 @@ const totalCalories = computed(() => {
       <div class="text-xl font-black text-emerald-800 tracking-tight">Food Jar AI</div>
       
       <nav class="hidden md:flex items-center gap-12 text-sm font-semibold text-slate-500">
-        <a href="#" class="text-emerald-900 border-b-2 border-emerald-900 pb-1">Jar</a>
-        <a href="#" class="hover:text-emerald-700 transition-colors">History</a>
-        <a href="#" class="hover:text-emerald-700 transition-colors">Settings</a>
+        <router-link to="/" class="text-emerald-900 border-b-2 border-emerald-900 pb-1">Jar</router-link>
+        <router-link :to="`/report/${new Date().toISOString().split('T')[0]}`" class="hover:text-emerald-700 transition-colors">History</router-link>
+        <router-link to="/profile" class="hover:text-emerald-700 transition-colors">Settings</router-link>
       </nav>
 
       <div class="flex items-center gap-6">
         <button @click="handleLogout" class="text-xs font-bold text-slate-400 hover:text-brand-pink transition-colors uppercase tracking-widest">Logout</button>
         <button class="text-slate-400 hover:text-slate-600"><Bell class="w-5 h-5" /></button>
-        <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm">
+        <router-link to="/profile" class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm">
           <img src="https://ui-avatars.com/api/?name=User&background=065f46&color=fff" alt="Profile" />
-        </div>
+        </router-link>
       </div>
     </header>
 
@@ -137,17 +161,17 @@ const totalCalories = computed(() => {
           </div>
           <div>
             <p class="text-xs text-slate-400 font-bold uppercase">Streak</p>
-            <p class="text-xl font-bold">5 Days</p>
+            <p class="text-xl font-bold">{{ jarStats.streak || 0 }} Days</p>
           </div>
         </div>
 
-        <div class="pill-card flex items-center gap-4">
+        <div @click="updateWater" class="pill-card flex items-center gap-4 cursor-pointer hover:bg-blue-50/50 transition-all">
           <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
             <Droplets class="w-6 h-6" />
           </div>
           <div>
             <p class="text-xs text-slate-400 font-bold uppercase">Water</p>
-            <p class="text-xl font-bold">3/8 Glasses</p>
+            <p class="text-xl font-bold">{{ jarStats.water_intake || 0 }}/8 Glasses</p>
           </div>
         </div>
       </div>
@@ -163,6 +187,7 @@ const totalCalories = computed(() => {
 
     <!-- Modals -->
     <CameraModal v-if="showCamera" @capture="onCapture" @close="showCamera = false" />
+    <AnalysisResult :item="currentItem" :show="showAnalysis" @close="showAnalysis = false" @confirm="confirmItem" />
   </div>
 </template>
 

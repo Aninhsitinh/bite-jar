@@ -5,8 +5,8 @@ const FoodItem = require('./FoodItem');
 User.hasMany(Jar, { foreignKey: 'userId' });
 Jar.belongsTo(User, { foreignKey: 'userId' });
 
-Jar.hasMany(FoodItem, { foreignKey: 'jarId' });
-FoodItem.belongsTo(Jar, { foreignKey: 'jarId' });
+Jar.hasMany(FoodItem, { foreignKey: 'jarId', as: 'items' });
+FoodItem.belongsTo(Jar, { foreignKey: 'jarId', as: 'jar' });
 
 module.exports = {
   User,

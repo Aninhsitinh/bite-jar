@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model FoodItems {
+  id          Int                      @id @default(autoincrement())
+  jarId       Int
+  image_data  String
+  food_name   String?                  @db.VarChar(255)
+  category    enum_FoodItems_category?
+  fat_level   Int?
+  calories    Int?
+  ai_feedback String?
+  createdAt   DateTime                 @db.Timestamptz(6)
+  updatedAt   DateTime                 @db.Timestamptz(6)
+  Jars        Jars                     @relation(fields: [jarId], references: [id], onDelete: Cascade)
+}
+
+model Jars {
+  id             Int               @id @default(autoincrement())
+  userId         Int
+  date           DateTime?         @db.Date
+  status         enum_Jars_status? @default(open)
+  total_calories Int?              @default(0)
+  water_intake   Int?              @default(0)
+  daily_verdict  String?
+  createdAt      DateTime          @db.Timestamptz(6)
+  updatedAt      DateTime          @db.Timestamptz(6)
+  FoodItems      FoodItems[]
+  Users          Users             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date], map: "jars_user_id_date")
+}
+
+model Users {
+  id             Int                        @id @default(autoincrement())
+  username       String                     @unique @db.VarChar(255)
+  email          String                     @unique @db.VarChar(255)
+  googleId       String?                    @unique @db.VarChar(255)
+  password_hash  String?                    @db.VarChar(255)
+  cutoff_time    DateTime?                  @default(dbgenerated("'20:00:00'::time without time zone")) @db.Time(6)
+  streak         Int?                       @default(0)
+  jars_filled    Int?                       @default(0)
+  ai_personality enum_Users_ai_personality? @default(friendly)
+  notifications  Boolean?                   @default(true)
+  avatar_url     String?                    @db.VarChar(255)
+  createdAt      DateTime                   @db.Timestamptz(6)
+  updatedAt      DateTime                   @db.Timestamptz(6)
+  Jars           Jars[]
+}
+
+enum enum_FoodItems_category {
+  healthy
+  oily
+  sweet
+  balanced
+}
+
+enum enum_Jars_status {
+  open
+  closed
+}
+
+enum enum_Users_ai_personality {
+  strict
+  friendly
+}

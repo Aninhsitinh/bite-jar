@@ -32,6 +32,26 @@ const User = sequelize.define('User', {
   cutoff_time: {
     type: DataTypes.TIME,
     defaultValue: '20:00:00'
+  },
+  streak: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  jars_filled: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  ai_personality: {
+    type: DataTypes.ENUM('strict', 'friendly'),
+    defaultValue: 'friendly'
+  },
+  notifications: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  avatar_url: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   timestamps: true,

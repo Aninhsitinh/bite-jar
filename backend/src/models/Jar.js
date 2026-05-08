@@ -23,6 +23,10 @@ const Jar = sequelize.define('Jar', {
     type: DataTypes.INTEGER,
     defaultValue: 0
   },
+  water_intake: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
   daily_verdict: {
     type: DataTypes.TEXT,
     allowNull: true
