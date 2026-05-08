@@ -6,59 +6,38 @@ const analyzeFoodImage = async (imageBuffer, mimeType) => {
   if (!apiKey) throw new Error("GEMINI_API_KEY is missing!");
 
   try {
-    // 1. Bước dò tìm: Hỏi Google xem Key này được dùng model nào
-    console.log("[AI-Scanner] Scanning for available models...");
-    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-    const listResponse = await axios.get(listUrl);
+    console.log(`[AI] Attempting analysis with gemini-1.5-flash...`);
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
-    // Lọc ra các model hỗ trợ "generateContent" và có Vision (thường là bản Flash hoặc Pro)
-    const availableModels = listResponse.data.models
-      .filter(m => m.supportedGenerationMethods.includes("generateContent"))
-      .map(m => m.name); // Tên có dạng "models/gemini-..."
+    const payload = {
+      contents: [{
+        parts: [
+          { text: "Bạn là một chuyên gia dinh dưỡng. Phân tích món ăn và trả về JSON: {\"food_name\": \"...\", \"calories_estimate\": 0, \"category\": \"balanced\", \"fat_level\": 5, \"short_feedback\": \"...\"}" },
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: imageBuffer.toString("base64")
+            }
+          }
+        ]
+      }]
+    };
 
-    console.log(`[AI-Scanner] Found ${availableModels.length} models: ${availableModels.join(', ')}`);
-
-    if (availableModels.length === 0) throw new Error("No models available for this API Key.");
-
-    // 2. Thử lần lượt các model tìm được
-    let lastError = null;
-    for (const fullModelName of availableModels) {
-      try {
-        console.log(`[AI-Scanner] Testing ${fullModelName}...`);
-        const url = `https://generativelanguage.googleapis.com/v1beta/${fullModelName}:generateContent?key=${apiKey}`;
-        
-        const payload = {
-          contents: [{
-            parts: [
-              { text: "Bạn là một chuyên gia dinh dưỡng. Phân tích món ăn và trả về JSON: {\"food_name\": \"...\", \"calories_estimate\": 0, \"category\": \"balanced\", \"fat_level\": 5, \"short_feedback\": \"...\"}" },
-              {
-                inlineData: {
-                  mimeType: mimeType,
-                  data: imageBuffer.toString("base64")
-                }
-              }
-            ]
-          }]
-        };
-
-        const response = await axios.post(url, payload, { timeout: 20000 });
-        if (response.data && response.data.candidates) {
-          const text = response.data.candidates[0].content.parts[0].text;
-          const cleanedText = text.replace(/```json|```/g, "").trim();
-          console.log(`[AI-Scanner] Success with ${fullModelName}!`);
-          return JSON.parse(cleanedText);
-        }
-      } catch (err) {
-        lastError = err;
-        console.warn(`[AI-Scanner] ${fullModelName} failed.`);
-      }
+    const response = await axios.post(url, payload, { timeout: 30000 });
+    
+    if (response.data && response.data.candidates) {
+      const text = response.data.candidates[0].content.parts[0].text;
+      const cleanedText = text.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleanedText);
     }
-    throw lastError;
+    
+    throw new Error("No response from AI");
 
   } catch (error) {
     const status = error.response ? error.response.status : 'Error';
-    console.error(`[AI-Scanner] Fatal error (${status}): ${error.message}`);
-    throw new Error("AI Scanner failed. Please try changing Render region to Oregon (US).");
+    const msg = error.response ? JSON.stringify(error.response.data) : error.message;
+    console.error(`[AI] Error (${status}): ${msg}`);
+    throw new Error(`AI failed. Region block detected? Try Oregon. (${status})`);
   }
 };
 
