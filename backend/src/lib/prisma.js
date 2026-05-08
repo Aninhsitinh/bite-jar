@@ -1,7 +1,9 @@
 const { PrismaClient } = require('@prisma/client');
 
-// Prisma 7 sẽ tự động lấy cấu hình từ prisma.config.ts
-const prisma = global.prisma || new PrismaClient();
+// Thêm cấu hình log để đối tượng không bị rỗng (non-empty)
+const prisma = global.prisma || new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],
+});
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
 
