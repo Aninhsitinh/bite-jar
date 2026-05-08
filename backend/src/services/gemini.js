@@ -5,20 +5,23 @@ const analyzeFoodImage = async (imageBuffer, mimeType) => {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY is missing!");
 
+  // Khởi tạo SDK. Mặc định nó sẽ dùng phiên bản tốt nhất.
   const genAI = new GoogleGenerativeAI(apiKey);
   
-  // Danh sách các model để thử nghiệm theo thứ tự ưu tiên
+  // Danh sách Model "bủa lưới" - Thử tất cả các tên có thể có
   const MODELS_TO_TRY = [
-    "gemini-1.5-flash",      // Lựa chọn số 1: Ổn định nhất
-    "gemini-1.5-flash-8b",   // Lựa chọn số 2: Nhẹ nhàng, dễ còn lượt dùng
-    "gemini-2.0-flash-exp"   // Lựa chọn số 3: Bản thử nghiệm mới
+    "gemini-1.5-flash-latest", // Tên đầy đủ bản Flash 1.5
+    "gemini-1.5-flash",        // Tên ngắn bản Flash 1.5
+    "gemini-2.0-flash-exp",    // Bản 2.0 Flash mới nhất
+    "gemini-1.5-pro-latest",   // Thử cả bản Pro nếu có quyền
+    "gemini-1.5-flash-8b"      // Bản siêu nhẹ
   ];
 
   let lastError = null;
 
   for (const modelName of MODELS_TO_TRY) {
     try {
-      console.log(`[AI] Attempting with model: ${modelName}...`);
+      console.log(`[AI] >>> Trying model: ${modelName}`);
       const model = genAI.getGenerativeModel({ model: modelName });
 
       const prompt = "Bạn là một chuyên gia dinh dưỡng. Hãy phân tích ảnh món ăn này. Trả về DUY NHẤT một chuỗi JSON thuần túy với cấu trúc: {\"food_name\": \"...\", \"calories_estimate\": 0, \"category\": \"balanced\", \"fat_level\": 5, \"short_feedback\": \"...\"}. Ngôn ngữ: Tiếng Việt.";
@@ -37,24 +40,23 @@ const analyzeFoodImage = async (imageBuffer, mimeType) => {
       const text = response.text();
       
       const cleanedText = text.replace(/```json|```/g, "").trim();
-      console.log(`[AI] Success with ${modelName}!`);
+      console.log(`[AI] !!! SUCCESS with ${modelName}`);
       
       return JSON.parse(cleanedText);
 
     } catch (error) {
-      console.warn(`[AI] Model ${modelName} failed:`, error.message);
+      // Ghi log chi tiết để debug nhưng vẫn tiếp tục thử model khác
+      console.warn(`[AI] Model ${modelName} failed with: ${error.message}`);
       lastError = error;
-      // Nếu không phải lỗi 429 (hết lượt) hoặc lỗi kết nối, có thể model này không tồn tại, thử cái tiếp theo
+      
+      // Nếu là lỗi 429 (hết lượt), vẫn thử model khác vì mỗi model có quota riêng
       continue; 
     }
   }
 
-  // Nếu đi hết vòng lặp mà vẫn lỗi
-  console.error(`[AI] All models failed. Last error:`, lastError.message);
-  if (lastError.message.includes("429")) {
-    throw new Error("Tất cả các model AI đều hết lượt dùng miễn phí. Hãy thử lại sau vài phút!");
-  }
-  throw new Error(`AI Failure: ${lastError.message}`);
+  // Nếu tất cả đều thất bại
+  console.error(`[AI] FATAL: All attempts exhausted.`);
+  throw new Error(`AI Failure. Last error: ${lastError.message}`);
 };
 
 module.exports = { analyzeFoodImage };
