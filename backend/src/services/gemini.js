@@ -8,7 +8,6 @@ const analyzeFoodImage = async (imageBuffer, mimeType) => {
     throw new Error("GEMINI_API_KEY is missing!");
   }
 
-  // Thử các Model với hậu tố -latest (bản ổn định nhất của Google)
   const models = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-1.5-flash"];
   
   let lastError = null;
@@ -17,23 +16,23 @@ const analyzeFoodImage = async (imageBuffer, mimeType) => {
     try {
       console.log(`[AI-Native] Attempting ${modelName} via v1 API...`);
       
-      // Chuyển sang v1 thay vì v1beta
       const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
       
+      // Tất cả biến phải là camelCase cho bản REST API v1
       const payload = {
         contents: [{
           parts: [
             { text: "Bạn là một chuyên gia dinh dưỡng. Phân tích món ăn và trả về JSON: {\"food_name\": \"...\", \"calories_estimate\": 0, \"category\": \"balanced\", \"fat_level\": 5, \"short_feedback\": \"...\"}" },
             {
-              inline_data: {
-                mime_type: mimeType,
+              inlineData: {
+                mimeType: mimeType,
                 data: imageBuffer.toString("base64")
               }
             }
           ]
         }],
         generationConfig: {
-          response_mime_type: "application/json"
+          responseMimeType: "application/json"
         }
       };
 
