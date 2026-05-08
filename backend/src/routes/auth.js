@@ -2,25 +2,54 @@ const express = require('express');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const prisma = require('../lib/prisma');
 const router = express.Router();
 
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    clientID: (process.env.GOOGLE_CLIENT_ID || "").trim(),
+    clientSecret: (process.env.GOOGLE_CLIENT_SECRET || "").trim(),
     callbackURL: `${(process.env.BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '')}/api/auth/google/callback`
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-      let [user] = await User.findOrCreate({
-        where: { googleId: profile.id },
-        defaults: {
-          username: profile.displayName,
-          email: profile.emails[0].value
-        }
+      const email = profile.emails[0].value;
+      
+      // 1. Tìm theo googleId
+      let user = await prisma.users.findUnique({
+        where: { googleId: profile.id }
       });
+
+      // 2. Nếu không thấy, tìm theo email (để gộp tài khoản)
+      if (!user) {
+        user = await prisma.users.findUnique({
+          where: { email: email }
+        });
+
+        if (user) {
+          // Cập nhật googleId cho user đã có sẵn email
+          user = await prisma.users.update({
+            where: { id: user.id },
+            data: { googleId: profile.id }
+          });
+        }
+      }
+
+      // 3. Nếu vẫn không thấy, tạo mới hoàn toàn
+      if (!user) {
+        user = await prisma.users.create({
+          data: {
+            googleId: profile.id,
+            username: profile.displayName,
+            email: email,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      }
+
       return done(null, user);
     } catch (err) {
+      console.error('[OAuth Error]:', err);
       return done(err, null);
     }
   }
