@@ -16,15 +16,15 @@ const analyzeFoodImage = async (imageBuffer, mimeType) => {
     try {
       console.log(`[AI-Native] Attempting ${modelName} with Primitive Syntax...`);
       
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
       
       const payload = {
         contents: [{
           parts: [
             { text: "Bạn là một chuyên gia dinh dưỡng. Hãy phân tích hình ảnh thức ăn và trả về DUY NHẤT một chuỗi JSON (không Markdown): {\"food_name\": \"...\", \"calories_estimate\": 0, \"category\": \"balanced\", \"fat_level\": 5, \"short_feedback\": \"...\"}" },
             {
-              inline_data: {
-                mime_type: mimeType,
+              inlineData: {
+                mimeType: mimeType,
                 data: imageBuffer.toString("base64")
               }
             }
