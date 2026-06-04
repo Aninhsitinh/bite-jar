@@ -12,7 +12,10 @@ passport.use(new GoogleStrategy({
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-      const email = profile.emails[0].value;
+      const email = profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null;
+      if (!email) {
+        return done(new Error("No email found in Google profile"), null);
+      }
       
       // 1. Tìm theo googleId
       let user = await prisma.users.findUnique({
@@ -50,6 +53,7 @@ passport.use(new GoogleStrategy({
       return done(null, user);
     } catch (err) {
       console.error('[OAuth Error]:', err);
+      // Truyền lỗi chi tiết để route callback có thể bắt được
       return done(err, null);
     }
   }
@@ -59,12 +63,24 @@ router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 router.get('/google/callback', 
-  passport.authenticate('google', { session: false }),
-  (req, res) => {
-    const token = jwt.sign({ id: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    // Redirect to frontend with token
-    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
-    res.redirect(`${frontendUrl}/login-success?token=${token}`);
+  (req, res, next) => {
+    passport.authenticate('google', { session: false }, (err, user, info) => {
+      if (err) {
+        // Thay vì crash văng ra Internal Server Error, ta trả về JSON chi tiết để dễ debug
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Internal Server Error during Google Auth', 
+          error: err.message || err.toString() 
+        });
+      }
+      if (!user) {
+        return res.redirect(`${(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '')}/login?error=auth_failed`);
+      }
+      
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+      const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+      res.redirect(`${frontendUrl}/login-success?token=${token}`);
+    })(req, res, next);
   });
 
 module.exports = router;
